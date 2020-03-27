@@ -1,0 +1,32 @@
+#!/usr/bin/env zsh
+
+COMMAND=$1
+SERVICE=$2
+
+POD_INDEX=1
+START_ARGS=3
+
+if  [ -n "${3+1}" ]; then
+    POD_INDEX=$3
+    START_ARGS=4
+fi
+
+IFS=$'\n' PODS=($(kubectl get pods | grep --line-buffered $SERVICE | cut -f 1 -d ' ' | tail -n +1))
+
+case $COMMAND in
+    list)
+        I=1
+        for POD in ${PODS[@]}
+        do
+            echo $I $POD
+            I=$((I + 1))
+        done
+        ;;
+    logs)
+        kubectl logs -f ${PODS[$POD_INDEX]} "${@:$START_ARGS}" | jq -CR -r '. as $line | try fromjson catch $line'
+        ;;
+    info)
+        kubectl describe pods ${PODS[$POD_INDEX]}
+        ;;
+esac
+

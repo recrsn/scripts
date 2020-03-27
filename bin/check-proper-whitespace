@@ -1,0 +1,32 @@
+#!/bin/sh
+
+bold=$(tput bold)
+red=$(tput setaf 1)
+normal=$(tput sgr0)
+
+# Redirect output to stderr.
+exec 1>&2
+
+changed_files=$(git ls-files)
+
+files_missing_newlines=0
+for file in $changed_files
+do
+    if [ -f "$file" ] && [ -n "$(tail -c1 "$file")" ]
+    then
+        echo "$file: no newline at end of file"
+        files_missing_newlines="$((files_missing_newlines + 1))"
+    fi
+done
+
+if [ "$files_missing_newlines" != 0 ]
+then
+    echo "${red}${bold}${files_missing_newlines} files are missing newline at end of life${normal}"
+    exit 1
+fi
+
+if ! git diff-tree --check "$(git hash-object -t tree /dev/null)" HEAD
+then
+    echo "${red}${bold}Detected whitespace errors${normal}"
+    exit 1
+fi

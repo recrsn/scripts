@@ -1,0 +1,73 @@
+#!/bin/sh
+
+if [ "$(uname)" != "Darwin" ]
+then
+    echo "This script only runs under macOS"
+    exit 1
+fi
+
+TOTP_SECRET_FILE="$HOME/.config/vpnc-totp-secret"
+
+if [ ! -f "$TOTP_SECRET_FILE" ]
+then
+    echo "Set TOTP secret at $TOTP_SECRET_FILE"
+    exit 1
+fi
+
+PROG="$(basename "$0")"
+
+if [ -z "$1" ]
+then
+    echo "Automatically connect to a TOTP protected IKEv2 VPN"
+    echo
+    echo "Usage: $PROG vpn_name"
+    echo
+    echo "You can find the VPN name from the VPN icon in the status area"
+    exit 1
+fi
+
+TOTP_SECRET="$(cat "$TOTP_SECRET_FILE")"
+
+otp="$(oathtool -b --totp "$TOTP_SECRET")" vpn="$1" osascript << EOF
+#!/usr/bin/env osascript
+set otp to system attribute "otp"
+set vpn to system attribute "vpn"
+
+tell application "System Preferences"
+  reveal pane "Network"
+  activate
+  tell application "System Events"
+    tell process "System Preferences"
+      tell window 1
+        repeat with r in rows of table 1 of scroll area 1
+          set vpn_connected to vpn & ", Connected"
+          set vpn_not_connected to vpn & ", Not Connected"
+          set ax_value to (value of attribute "AXValue" of static text 1 of r as string)
+          if ax_value is equal to vpn_connected
+            error "You are already connected" number -123
+            quit
+          end if
+          if ax_value is equal to vpn_not_connected
+            select r
+          end if
+        end repeat
+        tell group 1
+          click button "Authentication Settings…"
+        end tell
+        tell sheet 1
+          set focused of text field 2 to true
+          set value of text field 2 to otp
+          click button "Ok"
+        end tell
+        click button "Apply"
+        delay 1
+        tell group 1
+          click button "Connect"
+        end tell
+      end tell
+    end tell
+  end tell
+  quit
+end tell
+EOF
+

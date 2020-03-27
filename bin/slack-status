@@ -1,0 +1,110 @@
+#!/usr/bin/env bash
+
+TOKEN_FILE="$HOME/.config/slacktoken"
+
+if [[ ! -f "$TOKEN_FILE" ]]
+then
+    echo "Slack token not found"
+    echo
+    echo "Generate a token at https://api.slack.com/legacy/custom-integrations/legacy-tokens"
+    echo "and put it in $TOKEN_FILE"
+    echo
+
+    exit 1
+fi
+
+PROG=$(basename "$0")
+SLACK_TOKEN=$(cat "$HOME/.config/slacktoken")
+API_URL='https://slack.com/api/users.profile.set'
+PRESENCE_API_URL='https://slack.com/api/users.setPresence'
+
+function show_usage {
+    printf "Usage: %s command [flags] args...\n" "$PROG"
+    printf "\n"
+    printf "Available commands\n"
+    echo   "------------------"
+    echo
+    printf "\tset status_text\tSet slack status to status text\n"
+    printf "\n"
+    printf "\tFLAGS\n"
+    printf "\t-----\n"
+    printf "\n"
+    printf "\t\t-e emoji\tSet the status emoji (such as: house, cat etc.)\n"
+    printf "\n"
+    printf "\tclear          \tClears any slack status\n"
+    printf "\n"
+    printf "\n"
+    printf "Flags for all commands\n"
+    echo   "----------------------"
+    echo
+    printf "\t-a\tMark yourself as \"away\"\n"
+    printf "\n"
+}
+
+function set_slack_status {
+    curl -X POST \
+         -H "Authorization: Bearer ${SLACK_TOKEN}" \
+         -H 'Content-Type: application/json; charset=utf-8' \
+         --silent \
+         --data-raw "{ \"profile\": { \"status_text\": \"${2}\", \"status_emoji\": \"${1}\" } }" \
+         "${API_URL}" > /dev/null
+}
+
+
+function clear_status {
+    set_slack_status "" ""
+    printf "Status cleared\n"
+}
+
+if [ $# -eq 0 ]
+then
+    show_usage
+    exit 1
+fi
+
+case $1 in
+    clear) ACTION='clear' ;;
+    set) ACTION='set' ;;
+    *)
+        printf "Invalid action: %s\n\n" "$1"
+        show_usage
+        exit 1 ;;
+esac
+
+shift 1
+
+unset SET_AWAY EMOJI
+
+while getopts 'ae:' c
+do
+    case $c in
+        a) SET_AWAY='true' ;;
+        e) EMOJI=":${OPTARG}:" ;;
+        *)
+            printf "Invalid flag\n"
+            show_usage
+            exit 1 ;;
+    esac
+done
+
+shift $((OPTIND-1))
+
+
+case $ACTION in
+    clear)
+        clear_status ;;
+    set)
+        set_slack_status "$EMOJI" "$@" ;;
+esac
+
+if [[ "$SET_AWAY" == 'true' ]]
+then
+    curl -X POST \
+        -H "Authorization: Bearer ${SLACK_TOKEN}" \
+        -H 'Content-Type: application/json; charset=utf-8' \
+        --data-raw '{ "presence": "away" }' \
+        "$PRESENCE_API_URL" > /dev/null
+
+    printf "Set presence to away\n"
+fi
+
