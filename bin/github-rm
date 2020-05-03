@@ -1,0 +1,65 @@
+#!/bin/sh
+
+TOKEN_FILE="$HOME/.config/github-token"
+PROG=$(basename "$0")
+
+if [ ! -f "$TOKEN_FILE" ]; then
+    echo "Slack token not found"
+    echo
+    echo "Generate a token at "
+    echo "and put it in $TOKEN_FILE"
+    echo
+
+    exit 1
+fi
+
+GITHUB_API_TOKEN=$(cat "$TOKEN_FILE")
+
+delete_repo() {
+    echo "Deleting $1"
+    curl -i -X delete \
+        -H "Authorization: token $GITHUB_API_TOKEN" \
+        -H "Accept: application/vnd.github.v3+json" \
+        "https://api.github.com/repos/${1}"
+}
+
+show_usage() {
+    printf "Usage: %s repos...        Delete all repos\n" "$PROG"
+    printf "       %s -b input_file   Delete all repos from input file\n" "$PROG"
+}
+
+delete_repo_batch() {
+    while read -r repo; do
+        delete_repo "$repo"
+    done <"$1"
+}
+
+if [ $# -eq 0 ]; then
+    show_usage
+    exit 1
+fi
+
+BATCH='false'
+
+while getopts 'b' o; do
+    case "$o" in
+    b) BATCH='true' ;;
+    *)
+        echo "Invalid flag: $o"
+        show_usage
+        exit 1
+        ;;
+    esac
+done
+
+CMD='delete_repo'
+
+if [ "$BATCH" = 'true' ]; then
+    CMD='delete_repo_batch'
+fi
+
+shift $((OPTIND - 1))
+
+for arg in "$@"; do
+    $CMD "$arg"
+done
