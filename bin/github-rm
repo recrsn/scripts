@@ -17,7 +17,7 @@ GITHUB_API_TOKEN=$(cat "$TOKEN_FILE")
 
 delete_repo() {
     echo "Deleting $1"
-    curl -i -X delete \
+    curl -i -X DELETE \
         -H "Authorization: token $GITHUB_API_TOKEN" \
         -H "Accept: application/vnd.github.v3+json" \
         "https://api.github.com/repos/${1}"
