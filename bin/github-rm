@@ -4,9 +4,9 @@ TOKEN_FILE="$HOME/.config/github-token"
 PROG=$(basename "$0")
 
 if [ ! -f "$TOKEN_FILE" ]; then
-    echo "Slack token not found"
+    echo "Github token not found"
     echo
-    echo "Generate a token at "
+    echo "Generate a token at https://github.com/settings/tokens"
     echo "and put it in $TOKEN_FILE"
     echo
 
