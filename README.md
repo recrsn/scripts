@@ -67,6 +67,17 @@ vpnc vpn_name
 
 List remote Git branches and the last commit date for each branch. Sort by most recent commit date.
 
+### Usage
+
 Inside a git work tree:
 
 `git branch-list`x
+
+## github-rm
+
+Mass delete GitHub repositories
+
+### Usage
+
+Usage: github-rm repos... Delete all repos
+github-rm -b input_file Delete all repos from input file

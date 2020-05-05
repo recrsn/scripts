@@ -24,6 +24,7 @@ delete_repo() {
 }
 
 show_usage() {
+    printf "%s - Mass delete GitHub repositories\n" "$PROG"
     printf "Usage: %s repos...        Delete all repos\n" "$PROG"
     printf "       %s -b input_file   Delete all repos from input file\n" "$PROG"
 }
