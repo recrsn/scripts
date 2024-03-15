@@ -1,0 +1,14 @@
+#!/bin/sh
+
+CURRENT_BRANCH=$(git branch --show-current)
+DEFAULT_BRANCH=$(git remote show origin | grep "HEAD branch" | cut -d' ' -f5)
+
+for branch in $( git branch -q --format "%(refname:short)" | grep -v "$DEFAULT_BRANCH"); do
+    git checkout "$branch"
+    git pull --rebase origin "$DEFAULT_BRANCH" || exit 1
+done
+
+git checkout "$CURRENT_BRANCH"
+git branch --merged | grep -v "$DEFAULT_BRANCH" | xargs git branch -d
+
+git branch -q --format "%(refname:short)" | grep -v "$DEFAULT_BRANCH" | xargs git push --force-with-lease origin

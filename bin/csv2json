@@ -1,0 +1,37 @@
+#!/usr/bin/env python3
+
+import sys
+import json
+import csv
+
+from argparse import ArgumentParser, FileType
+
+
+def main():
+    parser = ArgumentParser(description='Convert CSV to JSON')
+    parser.add_argument('input', type=FileType(
+        'r'), help='Input (default STDIN)', default=sys.stdin)
+    parser.add_argument('-o', '--output', type=FileType(
+        'w'), help='Output file (default: STDOUT)', default=sys.stdout, required=False)
+    parser.add_argument('-p', '--pretty', help='Output pretty printed JSON',
+                        action='store_true', default=False)
+    parser.add_argument(
+        '-s', '--spaces', help='Spaces to use for indentation (only used if pretty is specified and format is JSON)', type=int, default=2)
+    parser.add_argument(
+        '-f', '--format', choices=['json', 'ndjson'], default='json', help='Output format (default: json)')
+
+    args = parser.parse_args()
+    reader = csv.DictReader(args.input)
+
+    if args.format == "json":
+        indent = args.spaces if args.pretty else None
+        args.output.write(json.dumps([row for row in reader], indent=indent))
+        args.output.write("\n")
+    elif args.format == "ndjson":
+        for row in reader:
+            args.output.write(json.dumps(
+                row).replace("\n", ' ') + "\n")
+
+
+if __name__ == "__main__":
+    main()

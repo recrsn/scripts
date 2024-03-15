@@ -1,0 +1,42 @@
+#!/usr/bin/env python3
+
+import click
+import json
+import os
+
+
+def format_and_sort_json(data, indent=2):
+    if isinstance(data, dict):
+        return {key: format_and_sort_json(value, indent) for key, value in sorted(data.items())}
+    if isinstance(data, list):
+        return [format_and_sort_json(item, indent) for item in data]
+    return data
+
+
+@click.command()
+@click.argument("file_path", type=click.Path(exists=True))
+@click.option("-n", "--indent", default=2, help="Number of spaces for indentation")
+@click.option("-i", "--inplace", is_flag=True, help="Perform in-place replacement of the original file")
+def main(file_path, indent, inplace):
+    with open(file_path, "r") as file:
+        try:
+            json_data = json.load(file)
+        except json.JSONDecodeError as e:
+            click.echo(f"Error decoding JSON: {e}")
+            return
+
+    formatted_data = format_and_sort_json(json_data, indent)
+
+    formatted_json = json.dumps(formatted_data, indent=indent)
+
+    if inplace:
+        with open(file_path, "w") as file:
+            file.write(formatted_json)
+        click.echo(f"Formatted and sorted JSON written to {file_path} (in-place).")
+    else:
+        click.echo(formatted_json)
+
+
+if __name__ == "__main__":
+    main()
+

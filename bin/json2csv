@@ -1,0 +1,45 @@
+#!/usr/bin/env python3
+
+from argparse import ArgumentParser, FileType
+import json
+import csv
+import sys
+
+
+def main():
+    parser = ArgumentParser(description="Convert JSON to JSON")
+    parser.add_argument(
+        "input", type=FileType("r"), help="Input (default STDIN)", default=sys.stdin
+    )
+    parser.add_argument(
+        "-o",
+        "--output",
+        type=FileType("w"),
+        help="Output file (default: STDOUT)",
+        default=sys.stdout,
+        required=False,
+    )
+    parser.add_argument(
+        "-f",
+        "--format",
+        choices=["json", "ndjson"],
+        default="json",
+        help="Input format (default: json)",
+    )
+
+    args = parser.parse_args()
+
+    if args.format == "json":
+        data = json.load(args.input)
+        writer = csv.DictWriter(args.output, fieldnames=data[0].keys())
+        writer.writeheader()
+        writer.writerows(data)
+    elif args.format == "ndjson":
+        data = [json.loads(line) for line in args.input]
+        writer = csv.DictWriter(args.output, fieldnames=data[0].keys())
+        writer.writeheader()
+        writer.writerows(data)
+
+
+if __name__ == "__main__":
+    main()
